@@ -1,0 +1,8 @@
+requests
+pyrogram
+tgcrypto
+pyromod
+python-dotenv
+duckduckgo-search
+requests
+flask
