@@ -7,6 +7,7 @@ from pyrogram.enums import ParseMode
 from config import Config
 from plugins.settings import USER_PREFS
 from utils.image_manager import get_image
+from datetime import datetime
 
 # --- HELPER FUNCTIONS ---
 def format_size(bytes_size):
@@ -82,24 +83,36 @@ async def format_message(client, message):
         if message.document or message.video or message.audio or message.photo:
             
             if message.photo:
-                file_name = "Image_File.jpg"
+                # Telegram compressed photos ka naam hata deta hai, 
+                # isliye hum Professional Timestamp logic (IMG_YYYYMMDD_HHMMSS.jpg) use karenge.
+                msg_date = message.date
+                date_str = msg_date.strftime("%Y%m%d_%H%M%S") if msg_date else "Unknown"
+                file_name = f"IMG_{date_str}.jpg"
                 file_size = format_size(message.photo.file_size) if hasattr(message.photo, 'file_size') else "Unknown Size"
             else:
                 media = message.document or message.video or message.audio
-                file_name = getattr(media, "file_name", "Unknown File")
+                # Agar direct document hai, toh asli naam yahan se nikal aayega
+                file_name = getattr(media, "file_name", None)
+                if not file_name: # Fallback agar document ka bhi naam missing ho
+                    file_name = "Unknown_Media_File"
+                    
                 f_size = getattr(media, "file_size", 0)
                 file_size = format_size(f_size)
 
-            # Smart details nikalo
-            file_emoji, file_format, clean_title = get_smart_file_details(file_name)
-            clean_title = clean_title.upper()
-            hashtags = generate_hashtags(clean_title)
+            # --- Extract & Format File Metadata ---
+            file_emoji, file_format, raw_title = get_smart_file_details(file_name)
+            
+            # Professional String Formatting: Safely handle None values, remove extra spaces, and uppercase
+            clean_title = str(raw_title).strip().upper() if raw_title else "UNTITLED_DOCUMENT"
+            
+            # Generate Hashtags with a default fallback to ensure it's never completely empty
+            hashtags = generate_hashtags(clean_title) or "#TelegramFiles #Downloads"
 
             # ULTRA-PREMIUM CAPTION
             caption_text = (
-                f"▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰\n"
-                f"|<blockquote>{file_emoji} <code>{clean_title}{file_format}</code> {file_emoji}</blockquote>\n"
-                f"▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰\n"
+                f"▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰\n"
+                f"<blockquote>{file_emoji} <code>{clean_title}{file_format}</code> </blockquote>\n"
+                f"▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰\n"
                 f"│\n"
                 f"│ 💾 <b>Size:</b> {file_size}\n"
                 f"│ 🛡️ <b>Status:</b> Safe & Verified\n"
@@ -114,14 +127,16 @@ async def format_message(client, message):
                 f"│ <i>{hashtags}</i>\n"
                 f"├───────────────────────\n"
                 f"│ 👤 ADMIN: <b>{Config.OWNER_NAME}</b> ✨\n"
-                f"│ 🌐 <a href='{Config.TELEGRAM_USER}'>Telegram</a> | <a href='{Config.INSTAGRAM}'>Instagram</a> | <a href='{Config.YOUTUBE}'>YouTube</a>\n"
+                f"│ 🌐 <a href='{Config.TELEGRAM_USER}'>Telegram</a> | <a href='{Config.INSTAGRAM}'>Instagram</a> | <a href='{Config.YOUTUBE}'>YT</a>\n"
                 f"└───────────────────────┘\n\n"
                 f"👇 <b>Save/Forward Your File From Below</b> 👇"
             )
             
-            # SHARE BUTTON LOGIC
-            share_text = urllib.parse.quote(f"🚀 Found an amazing file: {clean_title}!\n\nGet it here 👇")
-            share_url = f"https://t.me/share/url?url={Config.CHANNEL_LINK}&text={share_text}"
+            # PERFECT SHARE BUTTON LOGIC
+            # Pura text ek sath encode karenge taaki link hamesha bottom par aaye
+            raw_share_text = f"🚀 Found an amazing file: {clean_title}!\n\n👇 Get it here 👇\n{Config.CHANNEL_LINK}"
+            share_text = urllib.parse.quote(raw_share_text)
+            share_url = f"https://t.me/share/url?text={share_text}"
 
             buttons = InlineKeyboardMarkup([
                 [
@@ -200,9 +215,9 @@ async def format_message(client, message):
 
                 # ULTRA-PREMIUM CAPTION FOR LINKS
                 caption_text = (
-                    f"▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰\n"
-                    f"|<blockquote>{file_emoji} <code>{clean_title}{file_format}</code> {file_emoji}</blockquote>\n"
-                    f"══════════════════════\n"
+                    f"▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰\n"
+                    f"<blockquote>{file_emoji} <code>{clean_title}{file_format} </code> </blockquote>\n"
+                    f"▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰\n"
                     f"│\n"
                     f"│ 🛡️ <b>Status:</b> Safe & Verified\n"
                     f"│\n"
@@ -224,9 +239,11 @@ async def format_message(client, message):
                     f"👇 <b>Download Your File Below</b> 👇"
                 )
                 
-                # SHARE BUTTON LOGIC
-                share_text = urllib.parse.quote(f"🚀 Found an amazing file: {clean_title}!\n\nGet it here 👇")
-                share_url = f"https://t.me/share/url?url={Config.CHANNEL_LINK}&text={share_text}"
+                # PERFECT SHARE BUTTON LOGIC
+                # Pura text ek sath encode karenge taaki link hamesha bottom par aaye
+                raw_share_text = f"🚀 Found an amazing file: {clean_title}!\n\n👇 Get it here 👇\n{Config.CHANNEL_LINK}"
+                share_text = urllib.parse.quote(raw_share_text)
+                share_url = f"https://t.me/share/url?text={share_text}"
 
                 buttons_list = []
                 if short_link:
