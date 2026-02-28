@@ -97,11 +97,11 @@ async def format_message(client, message):
 
             # ULTRA-PREMIUM CAPTION
             caption_text = (
-                f"══════════════════════\n"
-                f"<blockquote>{file_emoji} <code>{clean_title}</code> {file_emoji}</blockquote>\n"
-                f"══════════════════════\n"
+                f"▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰\n"
+                f"|<blockquote>{file_emoji} <code>{clean_title}{file_format}</code> {file_emoji}</blockquote>\n"
+                f"▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰\n"
                 f"│\n"
-                f"│ 💾 <b>Size:</b> {file_size} | ⚙️ <b>Format:</b> {file_format}\n"
+                f"│ 💾 <b>Size:</b> {file_size}\n"
                 f"│ 🛡️ <b>Status:</b> Safe & Verified\n"
                 f"│\n"
                 f"│ 🔓 <b>Direct File (No Ads):</b>\n"
@@ -114,7 +114,7 @@ async def format_message(client, message):
                 f"│ <i>{hashtags}</i>\n"
                 f"├───────────────────────\n"
                 f"│ 👤 ADMIN: <b>{Config.OWNER_NAME}</b> ✨\n"
-                f"│ 🌐 <a href='{Config.TELEGRAM_USER}'>Telegram</a> | <a href='{Config.INSTAGRAM}'>Instagram</a> | <a href='{Config.YOUTUBE}'>YT</a>\n"
+                f"│ 🌐 <a href='{Config.TELEGRAM_USER}'>Telegram</a> | <a href='{Config.INSTAGRAM}'>Instagram</a> | <a href='{Config.YOUTUBE}'>YouTube</a>\n"
                 f"└───────────────────────┘\n\n"
                 f"👇 <b>Save/Forward Your File From Below</b> 👇"
             )
@@ -200,11 +200,10 @@ async def format_message(client, message):
 
                 # ULTRA-PREMIUM CAPTION FOR LINKS
                 caption_text = (
-                    f"══════════════════════\n"
-                    f"<blockquote>{file_emoji} <code>{clean_title}</code> {file_emoji}</blockquote>\n"
+                    f"▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰\n"
+                    f"|<blockquote>{file_emoji} <code>{clean_title}{file_format}</code> {file_emoji}</blockquote>\n"
                     f"══════════════════════\n"
                     f"│\n"
-                    f"│ 💾 <b>Size:</b> {file_size} | ⚙️ <b>Format:</b> {file_format}\n"
                     f"│ 🛡️ <b>Status:</b> Safe & Verified\n"
                     f"│\n"
                     f"│ 📥 <b>File Download Link:</b>\n"
@@ -220,7 +219,7 @@ async def format_message(client, message):
                     f"│ <i>{hashtags}</i>\n"
                     f"├───────────────────────\n"
                     f"│ 👤 ADMIN: <b>{Config.OWNER_NAME}</b> ✨\n"
-                    f"│ 🌐 <a href='{Config.TELEGRAM_USER}'>Telegram</a> | <a href='{Config.INSTAGRAM}'>Instagram</a> | <a href='{Config.YOUTUBE}'>YT</a>\n"
+                    f"│ 🌐 <a href='{Config.TELEGRAM_USER}'>Telegram</a> | <a href='{Config.INSTAGRAM}'>Instagram</a> | <a href='{Config.YOUTUBE}'>YouTube</a>\n"
                     f"└───────────────────────┘\n\n"
                     f"👇 <b>Download Your File Below</b> 👇"
                 )
