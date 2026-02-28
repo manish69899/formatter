@@ -6,3 +6,4 @@ python-dotenv
 duckduckgo-search
 requests
 flask
+Pillow
