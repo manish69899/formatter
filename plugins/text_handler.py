@@ -106,7 +106,7 @@ async def format_message(client, message):
 
             # ULTRA-PREMIUM CAPTION
             caption_text = (
-                f"▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰\n"
+                f"\n"
                 f"<blockquote>{file_emoji} <b>FILE NAME:</b>\n<code>{exact_title}</code></blockquote>\n"
                 f"▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰\n"
                 f"│\n"
@@ -208,7 +208,7 @@ async def format_message(client, message):
 
                 # ULTRA-PREMIUM CAPTION FOR LINKS
                 caption_text = (
-                    f"▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰\n"
+                    f"\n"
                     f"<blockquote>{file_emoji} <b>FILE NAME:</b>\n<code>{exact_title}</code></blockquote>\n"
                     f"▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰\n"
                     f"│\n"
