@@ -106,11 +106,9 @@ def get_smart_file_details(filename):
 
     return emoji, form, filename_str
 
-import re
-
 def generate_hashtags(filename):
     """File ke naam se automatically trending aur clean hashtags banata hai.
-    Sath hi duplicate tags aur aaltu-faltu brackets ko smart tarike se filter karta hai."""
+    Smart Year Detection: Sirf 4 digit wale numbers ko 'Year' banayega, baaki aaltu-faltu numbers ignore honge."""
     
     # 1. Extension hatao safely
     name_without_ext = re.sub(r'\.[a-zA-Z0-9]+$', '', str(filename))
@@ -121,30 +119,42 @@ def generate_hashtags(filename):
     # 3. Kam se kam 2 characters wale alphanumeric words nikalo
     words = re.findall(r'\b[a-zA-Z0-9]{2,}\b', clean_name)
     
-    # 4. Top 3 words ko capitalize karke list me daalo
-    generated_tags = [f"#{word.capitalize()}" for word in words[:3]]
+    # 4. 🔥 SMART YEAR DETECTION
+    valid_words = []
+    for word in words:
+        if word.isdigit():
+            # Check length: Agar exactly 4 digit hai, toh 'Year' banao
+            if len(word) == 4:
+                valid_words.append(f"Year{word}")
+            else:
+                # 10-digit ya kisi aur length ka number ho, toh chhor do (skip)
+                continue
+        else:
+            # Agar letters hain (e.g. Physics), toh normally add karo
+            valid_words.append(word)
     
-    # 5. Default tags (Missing comma fix kar diya gaya hai)
+    # 5. Top 3 valid words ko capitalize karke list me daalo
+    generated_tags = [f"#{word.capitalize()}" for word in valid_words[:3]]
+    
+    # 6. Default tags
     default_tags = [
         "#pyqera", 
         "#Notes",
         "#pyq"
     ]
     
-    # 6. DUPLICATE REMOVER LOGIC (Order maintain karte hue duplicates hatayega)
+    # 7. DUPLICATE REMOVER LOGIC
     final_tags = []
     seen_tags = set()
     
-    # Generated aur default dono tags ko mila kar check karenge
     for tag in generated_tags + default_tags:
-        tag_lower = tag.lower() # Case-insensitive check (e.g., #Notes == #notes)
+        tag_lower = tag.lower() # Case-insensitive check
         if tag_lower not in seen_tags:
             final_tags.append(tag)
             seen_tags.add(tag_lower)
     
-    # 7. List ko string me join karke return karo
+    # 8. List ko string me join karke return karo
     return " ".join(final_tags)
-
 
 def extract_name_and_size(raw_name):
     """Text me se file size nikalta hai aur aaltu-faaltu emojis/text ekdum clean karta hai"""
@@ -203,7 +213,7 @@ async def format_message(client, message):
     
     # Password Section
     saved_pass = USER_PREFS.get(chat_id) 
-    pass_section = (f"│\n│ 🔐 <b>FILE PASSWORD:</b>\n│ 👉 <code>{saved_pass}</code> 👈\n│") if saved_pass else ""
+    pass_section = (f"│\n│ 🔐 <b>FILE PASSWORD:</b>\n│ 👉 <b>{saved_pass}</b> 👈\n│") if saved_pass else ""
 
     try:
         # ==========================================
