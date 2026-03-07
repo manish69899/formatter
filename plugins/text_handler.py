@@ -11,59 +11,186 @@ from datetime import datetime
 
 # --- HELPER FUNCTIONS ---
 def format_size(bytes_size):
-    """File size ko Bytes se KB/MB me convert karta hai"""
-    if not bytes_size: return "Unknown Size"
-    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+    """File size ko smartly Bytes se KB/MB/GB me convert karta hai.
+    Invalid inputs aur 0 bytes ko bhi perfectly handle karta hai."""
+    
+    # 1. SMART TYPE SAFETY: Agar API ne string bhej diya ho, toh usko number me badlo
+    # Agar None ya kachra value aayi, toh crash hone se bachayega
+    try:
+        bytes_size = float(bytes_size)
+    except (ValueError, TypeError):
+        return "Unknown Size"
+
+    # 2. ZERO YA NEGATIVE CHECK: 0 byte ki file ko properly "0 B" dikhayega
+    if bytes_size <= 0:
+        return "0 B"
+
+    # 3. CONVERSION LOGIC (Added PB for PetaBytes just in case)
+    for unit in ['B', 'KB', 'MB', 'GB', 'TB', 'PB']:
         if bytes_size < 1024.0:
-            return f"{bytes_size:.2f} {unit}"
+            # 4. SMART FORMATTING: Agar last me .00 hai, toh usko hata kar clean look dega
+            # Example: 5.00 MB ban jayega 5 MB. Aur 1.50 MB ban jayega 1.5 MB
+            formatted_size = f"{bytes_size:.2f}".rstrip('0').rstrip('.')
+            return f"{formatted_size} {unit}"
+        
         bytes_size /= 1024.0
+        
     return "Unknown Size"
 
 def get_smart_file_details(filename):
     """Extension ke hisaab se Smart Emoji aur Format text nikalta hai.
-    Original file name ko bhi preserve karta hai."""
-    ext = str(filename).split('.')[-1].lower() if '.' in str(filename) else "file"
+    Programming languages aur un-registered extensions ko bhi handle karta hai."""
     
-    if ext in ['pdf']:
-        emoji, form = "📕", "PDF"
-    elif ext in ['mp4', 'mkv', 'avi', 'mov', 'webm']:
-        emoji, form = "🎬", "VIDEO"
-    elif ext in ['zip', 'rar', '7z', 'tar', 'gz']:
-        emoji, form = "🗜️", "ARCHIVE"
-    elif ext in ['jpg', 'jpeg', 'png', 'webp', 'gif']:
-        emoji, form = "🖼️", "IMAGE"
-    elif ext in ['apk', 'xapk']:
-        emoji, form = "📱", "ANDROID APP"
-    elif ext in ['mp3', 'm4a', 'wav']:
-        emoji, form = "🎵", "AUDIO"
-    elif ext in ['exe', 'msi']:
-        emoji, form = "💻", "PC SOFTWARE"
+    filename_str = str(filename).strip()
+    
+    # Extension nikalne ka safe tarika
+    if '.' in filename_str:
+        ext = filename_str.split('.')[-1].lower()
     else:
-        emoji, form = "📂", "DOCUMENT"
+        ext = ""
+
+    # Dictionary mapping (Sabse bada aur advanced list)
+    file_types = {
+        # 📚 Documents & Media
+        ("pdf",): ("📕", "PDF DOCUMENT"),
+        ("mp4", "mkv", "avi", "mov", "webm"): ("🎬", "VIDEO"),
+        ("zip", "rar", "7z", "tar", "gz", "iso"): ("🗜️", "ARCHIVE"),
+        ("jpg", "jpeg", "png", "webp", "gif", "bmp", "svg"): ("🖼️", "IMAGE"),
+        ("apk", "xapk", "apks"): ("📱", "ANDROID APP"),
+        ("mp3", "m4a", "wav", "flac"): ("🎵", "AUDIO"),
+        ("exe", "msi"): ("💻", "WINDOWS SOFTWARE"),
+        ("mac", "dmg"): ("🍏", "MAC SOFTWARE"),
+        ("doc", "docx", "rtf"): ("📝", "WORD DOCUMENT"),
+        ("xls", "xlsx", "csv"): ("📊", "SPREADSHEET"),
+        ("ppt", "pptx"): ("🖥️", "PRESENTATION"),
+        ("txt", "log"): ("📄", "TEXT FILE"),
         
-    # File name ko bilkul waise hi rakha gaya hai taaki original feel aaye
-    clean_name = str(filename).strip()
-    return emoji, form, clean_name
+        # 👨‍💻 Programming & Web Languages
+        ("py", "pyw", "ipynb"): ("🐍", "PYTHON SOURCE CODE"),
+        ("html", "htm"): ("🌐", "HTML DOCUMENT"),
+        ("css",): ("🎨", "CSS STYLESHEET"),
+        ("js", "jsx"): ("⚡", "JAVASCRIPT CODE"),
+        ("ts", "tsx"): ("📘", "TYPESCRIPT CODE"),
+        ("c", "h"): ("⚙️", "C SOURCE CODE"),
+        ("cpp", "hpp", "cxx"): ("⚙️", "C++ SOURCE CODE"),
+        ("java",): ("☕", "JAVA SOURCE CODE"),
+        ("php",): ("🐘", "PHP SCRIPT"),
+        ("cs",): ("🔷", "C# SOURCE CODE"),
+        ("go",): ("🐹", "GO SOURCE CODE"),
+        ("rs",): ("🦀", "RUST SOURCE CODE"),
+        ("rb",): ("💎", "RUBY SOURCE CODE"),
+        ("swift",): ("🦅", "SWIFT SOURCE CODE"),
+        ("kt", "kts"): ("🚀", "KOTLIN SOURCE CODE"),
+        ("sql", "sqlite", "db"): ("🗄️", "DATABASE SCRIPT"),
+        ("json", "xml", "yaml", "yml", "ini", "env"): ("🛠️", "CONFIG FILE"),
+        ("sh", "bash", "zsh"): ("🐧", "LINUX SHELL SCRIPT"),
+        ("bat", "cmd", "ps1"): ("📟", "WINDOWS SCRIPT")
+    }
+
+    # Default values
+    emoji = "📂"
+    form = "DOCUMENT"
+    found = False
+
+    # Check extension in our dictionary
+    for extensions, details in file_types.items():
+        if ext in extensions:
+            emoji, form = details
+            found = True
+            break
+    
+    # SMART FALLBACK: Agar inke alawa koi aur naya format aaye (jaise .dart)
+    if not found and ext:
+        emoji = "📄"
+        form = f"{ext.upper()} FILE" 
+
+    return emoji, form, filename_str
+
+import re
 
 def generate_hashtags(filename):
-    """File ke naam se automatically 2-3 trending hashtags banata hai"""
-    # Extension hatakar clean words nikalte hain sirf tags ke liye
-    name_without_ext = re.sub(r'\.[a-zA-Z0-9]+$', '', str(filename))
-    words = re.findall(r'\b[a-zA-Z]{4,}\b', name_without_ext)
-    tags = [f"#{word.capitalize()}" for word in words[:3]] # Top 3 words
+    """File ke naam se automatically trending aur clean hashtags banata hai.
+    Sath hi duplicate tags aur aaltu-faltu brackets ko smart tarike se filter karta hai."""
     
-    # Ek generic tag add kar do
-    tags.append("#TelegramFiles")
-    return " ".join(tags)
+    # 1. Extension hatao safely
+    name_without_ext = re.sub(r'\.[a-zA-Z0-9]+$', '', str(filename))
+    
+    # 2. Brackets, hyphens, underscores ko space me badlo taaki words properly alag ho
+    clean_name = re.sub(r'[\_\-\(\)\[\]\{\}]', ' ', name_without_ext)
+    
+    # 3. Kam se kam 2 characters wale alphanumeric words nikalo
+    words = re.findall(r'\b[a-zA-Z0-9]{2,}\b', clean_name)
+    
+    # 4. Top 3 words ko capitalize karke list me daalo
+    generated_tags = [f"#{word.capitalize()}" for word in words[:3]]
+    
+    # 5. Default tags (Missing comma fix kar diya gaya hai)
+    default_tags = [
+        "#pyqera", 
+        "#Notes",
+        "#pyq"
+    ]
+    
+    # 6. DUPLICATE REMOVER LOGIC (Order maintain karte hue duplicates hatayega)
+    final_tags = []
+    seen_tags = set()
+    
+    # Generated aur default dono tags ko mila kar check karenge
+    for tag in generated_tags + default_tags:
+        tag_lower = tag.lower() # Case-insensitive check (e.g., #Notes == #notes)
+        if tag_lower not in seen_tags:
+            final_tags.append(tag)
+            seen_tags.add(tag_lower)
+    
+    # 7. List ko string me join karke return karo
+    return " ".join(final_tags)
+
 
 def extract_name_and_size(raw_name):
-    """Text me se file size nikalta hai aur emojis clean karta hai"""
-    size_match = re.search(r'\(?(\d+(\.\d+)?\s*[KMG]B)\)?', raw_name, re.IGNORECASE)
-    size_str = size_match.group(1).upper() if size_match else "Unknown Size"
+    """Text me se file size nikalta hai aur aaltu-faaltu emojis/text ekdum clean karta hai"""
     
-    name = re.sub(r'(📁\s*File Name:|📄|✅|🔗\s*File Link:?)', '', raw_name, flags=re.IGNORECASE)
-    name = re.sub(r'\(\d+(\.\d+)?\s*[KMG]B\)', '', name, flags=re.IGNORECASE)
-    return name.strip(), size_str
+    # 1. Size nikalne ka advanced tarika (Ab TB aur simple Bytes bhi support karega)
+    # Matches formats like: 10 MB, 1.5GB, (200 KB), 500B
+    size_match = re.search(r'\(?(\d+(?:\.\d+)?)\s*([kKmMgGtT]?[bB])\)?', raw_name)
+    
+    if size_match:
+        # Number aur Unit ko alag nikal kar properly format karo (e.g., "1.5", "MB" -> "1.5 MB")
+        num = size_match.group(1)
+        unit = size_match.group(2).upper()
+        size_str = f"{num} {unit}"
+    else:
+        size_str = "Unknown Size"
+        
+    # 2. Faltu Emojis aur Text ko hatao (Aur bhi naye Telegram emojis add kiye hain)
+    garbage_patterns = [
+        r'📁|📂|📄|💾|📥|✅|🔗|📌|✨|🔥',  # Common Telegram Emojis
+        r'(?i)file name:\s*',             # "File Name:" (case insensitive)
+        r'(?i)file link:\s*',             # "File Link:"
+        r'(?i)name:\s*',                  # "Name:"
+        r'(?i)link:\s*',                  # "Link:"
+        r'\(\d+(?:\.\d+)?\s*[a-zA-Z]+\)', # (Size brackets hatane ke liye)
+        r'\d+(?:\.\d+)?\s*[kKmMgGtT][bB]' # Bina brackets wale size hatane ke liye
+    ]
+    
+    clean_name = raw_name
+    for pattern in garbage_patterns:
+        clean_name = re.sub(pattern, '', clean_name)
+        
+    # 3. Agar naam ke aage/peechhe koi hyphen (-) ya pipe (|) ya colon (:) reh gaya ho toh saaf karo
+    clean_name = re.sub(r'^[\-\|:\s]+|[\-\|:\s]+$', '', clean_name)
+    
+    # 4. Double/Triple spaces ko single space me badlo taaki naam neat dikhe
+    clean_name = re.sub(r'\s{2,}', ' ', clean_name)
+    
+    # 5. Final strip karke return karo
+    final_name = clean_name.strip()
+    
+    # Agar saaf karne ke baad naam completely gayab ho jaye, to ek default naam de do
+    if not final_name:
+        final_name = "Downloaded_File"
+        
+    return final_name, size_str
+
 
 
 # Filters me Photo, Document, Text sab allowed hai
@@ -82,7 +209,7 @@ async def format_message(client, message):
         # ==========================================
         # SCENARIO 1: AGAR USER NE DIRECT FILE BHEJI HAI
         # ==========================================
-        if message.document or message.video or message.audio or message.photo:
+        if message.media: 
             
             if message.photo:
                 # Telegram compressed photos ka naam hata deta hai, 
@@ -92,11 +219,15 @@ async def format_message(client, message):
                 file_name = f"IMG_{date_str}.jpg"
                 file_size = format_size(message.photo.file_size) if hasattr(message.photo, 'file_size') else "Unknown Size"
             else:
-                media = message.document or message.video or message.audio
+                media = getattr(message, message.media.value)
                 # Agar direct document hai, toh asli naam yahan se nikal aayega
                 file_name = getattr(media, "file_name", None)
                 if not file_name: # Fallback agar document ka bhi naam missing ho
-                    file_name = "Unknown_Media_File"
+                    # Fallback extension agar mime_type ho
+                    mime_ext = ".bin"
+                    if hasattr(media, "mime_type") and media.mime_type:
+                        mime_ext = "." + media.mime_type.split("/")[-1]
+                    file_name = f"Unknown_Media_File{mime_ext}"
                     
                 file_size = format_size(getattr(media, "file_size", 0))
 
@@ -107,15 +238,15 @@ async def format_message(client, message):
             # ULTRA-PREMIUM CAPTION
             caption_text = (
                 f"\n"
-                f"<blockquote>{file_emoji} <b>FILE NAME:</b>\n<code>{exact_title}</code></blockquote>\n"
+                f"<blockquote>{file_emoji} <b>FILE:</b>\n<b>{exact_title}</b></blockquote>\n"
                 f"▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰\n"
                 f"│\n"
                 f"│ ⚙️ <b>Format:</b> {file_format}\n"
                 f"│ 💾 <b>Size:</b> {file_size}\n"
                 f"│ 🛡️ <b>Status:</b> Safe & Verified\n"
                 f"│\n"
-                f"│ 🔓 <b>Direct File (No Ads):</b>\n"
-                f"│ <a href='{Config.DIRECT_PDF_LINK}'>Click to Request</a>\n"
+                f"│ 🔓 <b>Direct File :</b>\n"
+                f"│ <a href='{Config.DIRECT_PDF_LINK}'>Click to Join</a>\n"
                 f"│\n"
                 f"│ 📺 <b>Video Tutorial:</b>\n"
                 f"│ <a href='{Config.TUTORIAL_VIDEO}'>Watch How to Open</a>\n"
@@ -129,11 +260,24 @@ async def format_message(client, message):
                 f"👇 <b>Save/Forward Your File From Below</b> 👇"
             )
             
-            # PERFECT SHARE BUTTON LOGIC
-            raw_share_text = f"🚀 Found an amazing file: {exact_title}!\n\n👇 Get it here 👇\n{Config.CHANNEL_LINK}"
-            share_text = urllib.parse.quote(raw_share_text)
-            share_url = f"https://t.me/share/url?text={share_text}"
+            # Caption Length Check (Telegram Limit is 1024)
+            if len(caption_text) > 1024:
+                caption_text = caption_text[:1020] + "..."
 
+
+# ==========================================
+            # PERFECT SHARE BUTTON LOGIC (Fixed Layout)
+            # ==========================================
+            # Pura message ek hi string mein rakhenge taaki link neeche hi aaye
+            raw_share_text = f"🚀 Found an amazing file: {exact_title}!\n\n👇 Get it here 👇\n{Config.CHANNEL_LINK}"
+            
+            # Sirf 'text' parameter bhejenge Telegram ko, bina alag se 'url' parameter diye
+            share_params = {"text": raw_share_text}
+            encoded_query = urllib.parse.urlencode(share_params)
+            
+            share_url = f"https://t.me/share/url?{encoded_query}"
+
+            # Inline Buttons Layout
             buttons = InlineKeyboardMarkup([
                 [
                     InlineKeyboardButton("📢 Join Channel", url=Config.CHANNEL_LINK),
@@ -147,9 +291,6 @@ async def format_message(client, message):
                 parse_mode=ParseMode.HTML,
                 reply_markup=buttons
             )
-            
-            await status_msg.delete()
-            return
 
         # ==========================================
         # SCENARIO 2: AGAR USER NE TEXT/LINKS BHEJE HAIN
@@ -209,7 +350,7 @@ async def format_message(client, message):
                 # ULTRA-PREMIUM CAPTION FOR LINKS
                 caption_text = (
                     f"\n"
-                    f"<quote>{file_emoji} <b>FILE NAME:</b>\n<code>{exact_title}</code></quote>\n"
+                    f"<blockquote>{file_emoji} <b>FILE:</b>\n<b>{exact_title}</b></blockquote>\n"
                     f"▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰\n"
                     f"│\n"
                     f"│ 🛡️ <b>Status:</b> Safe & Verified\n"
@@ -217,8 +358,8 @@ async def format_message(client, message):
                     f"│ 📥 <b>File Download Link:</b>\n"
                     f"│ <a href='{final_download_link}'>Click Here to Download</a>\n"
                     f"│\n"
-                    f"│ 🔓 <b>Direct File (No Ads):</b>\n"
-                    f"│ <a href='{Config.DIRECT_PDF_LINK}'>Click to Request</a>\n"
+                    f"│ 🔓 <b>Direct File :</b>\n"
+                    f"│ <a href='{Config.DIRECT_PDF_LINK}'>Click Here to Join </a>\n"
                     f"│\n"
                     f"│ 📺 <b>Video Tutorial:</b>\n"
                     f"│ <a href='{Config.TUTORIAL_VIDEO}'>Watch How to Open</a>\n"
@@ -251,6 +392,10 @@ async def format_message(client, message):
                 
                 # Bug Fix: Agar image na ho toh properly text message bhej dega (skip nahi karega)
                 if image_path:
+                    # Caption Length Check for Image
+                    if len(caption_text) > 1024:
+                        caption_text = caption_text[:1020] + "..."
+                        
                     await client.send_photo(
                         chat_id=chat_id,
                         photo=image_path, 
@@ -267,7 +412,18 @@ async def format_message(client, message):
                         disable_web_page_preview=True
                     )
 
-            await status_msg.delete()
-
     except Exception as e:
-        await status_msg.edit(f"⚠️ **Error Occurred:**\n`{e}`\n\n_Please try again or contact Admin._")
+        print(f"Error in format_message: {e}")
+        try:
+            await status_msg.edit(f"⚠️ **Error Occurred:**\n`{e}`\n\n_Please try again or contact Admin._")
+        except:
+            pass # Agar edit fail ho jaye (e.g. message delete ho gaya ho)
+            
+    finally:
+        # Guarantee that the analyzing message is deleted if it hasn't been edited to an error state
+        try:
+             # Hum tabhi delete karenge jab text "Error Occurred" na ho
+            if "Error" not in status_msg.text:
+                await status_msg.delete()
+        except:
+            pass

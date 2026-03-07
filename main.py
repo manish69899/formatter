@@ -22,7 +22,8 @@ app = Client(
     api_id=Config.API_ID,
     api_hash=Config.API_HASH,
     bot_token=Config.BOT_TOKEN,
-    plugins=dict(root="plugins")
+    plugins=dict(root="plugins"),
+    in_memory=True  # 🔥 BAS YEH EK LINE ADD KARNI HAI 🔥
 )
 
 if __name__ == "__main__":
